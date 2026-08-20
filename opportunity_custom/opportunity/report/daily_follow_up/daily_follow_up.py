@@ -103,16 +103,27 @@ def execute(filters=None):
     conditions = []
     values = {}
 
-    # Sales Person filter
+    # ---------------------------------------------------------
+    # Sales Person Filter
+    # ---------------------------------------------------------
+
     if filters.get("sales_person"):
-        conditions.append("""
+        conditions.append(
+            """
             opp.custom_sales_person = %(sales_person)s
-        """)
+            """
+        )
+
         values["sales_person"] = filters.get("sales_person")
 
-    # Date range filter
+    # ---------------------------------------------------------
+    # Date Range Filter
+    # ---------------------------------------------------------
+
     if filters.get("from_date") and filters.get("to_date"):
-        conditions.append("""
+
+        conditions.append(
+            """
             (
                 opp.custom_date BETWEEN %(from_date)s AND %(to_date)s
 
@@ -128,15 +139,24 @@ def execute(filters=None):
 
                 opp.custom_date_follow_up4 BETWEEN %(from_date)s AND %(to_date)s
             )
-        """)
+            """
+        )
 
         values["from_date"] = filters.get("from_date")
         values["to_date"] = filters.get("to_date")
+
+    # ---------------------------------------------------------
+    # WHERE Clause
+    # ---------------------------------------------------------
 
     where_clause = ""
 
     if conditions:
         where_clause = "WHERE " + " AND ".join(conditions)
+
+    # ---------------------------------------------------------
+    # Main Query
+    # ---------------------------------------------------------
 
     data = frappe.db.sql(
         f"""
@@ -147,41 +167,53 @@ def execute(filters=None):
             opp.name AS opportunity,
 
             CASE
-                WHEN opp.party_type = 'Lead' THEN lead.lead_name
-                WHEN opp.party_type = 'Customer' THEN opp.party_name
+                WHEN opp.opportunity_from = 'Lead'
+                    THEN lead.lead_name
+
+                WHEN opp.opportunity_from = 'Customer'
+                    THEN opp.party_name
+
                 ELSE opp.party_name
             END AS customer,
 
             CASE
-                WHEN opp.party_type = 'Lead' THEN opp.party_name
+                WHEN opp.opportunity_from = 'Lead'
+                    THEN opp.party_name
+
                 ELSE NULL
             END AS lead_number,
 
             opp.custom_date AS follow_up_1_date,
+
             opp.custom_follow_up1 AS follow_up_1,
 
             opp.custom_date_follow_up2 AS follow_up_2_date,
+
             opp.custom_follow_up2 AS follow_up_2,
 
             opp.custom_follow_up_3_date AS follow_up_3_date,
+
             opp.custom_follow_up_3 AS follow_up_3,
 
             opp.custom_date_follow_up4 AS follow_up_4_date,
+
             opp.custom_follow_up4 AS follow_up_4,
 
-            opp.custom_next_action_to_be_done AS next_action_to_be_done,
+            opp.custom_next_action_to_be_done
+                AS next_action_to_be_done,
 
             opp.custom_outcome AS outcome
 
         FROM `tabOpportunity` opp
 
         LEFT JOIN `tabLead` lead
-            ON opp.party_type = 'Lead'
+            ON opp.opportunity_from = 'Lead'
             AND opp.party_name = lead.name
 
         {where_clause}
 
         ORDER BY
+
             COALESCE(
                 opp.custom_date,
                 opp.custom_date_follow_up2,
