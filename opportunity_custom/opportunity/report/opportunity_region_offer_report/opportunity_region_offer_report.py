@@ -8,8 +8,19 @@ def execute(filters=None):
     to_date = filters.get("to_date")
     region = filters.get("region")
 
-    if not from_date or not to_date:
-        frappe.throw("Please select From Date and To Date.")
+    # ---------------------------------------------------------
+    # VALIDATION
+    # ---------------------------------------------------------
+
+    if not from_date:
+        frappe.throw("Please select From Date.")
+
+    if not to_date:
+        frappe.throw("Please select To Date.")
+
+    # ---------------------------------------------------------
+    # CONDITIONS
+    # ---------------------------------------------------------
 
     conditions = """
         o.docstatus < 2
@@ -24,7 +35,7 @@ def execute(filters=None):
         """
 
     # ---------------------------------------------------------
-    # GET DATA
+    # GET OPPORTUNITY DATA
     # ---------------------------------------------------------
 
     data = frappe.db.sql(
@@ -32,7 +43,11 @@ def execute(filters=None):
         SELECT
             o.territory AS region,
 
-            /* FIRM = Maintenance + Project */
+            /* =================================================
+               FIRM
+               Maintenance + Project
+               ================================================= */
+
             SUM(
                 CASE
                     WHEN o.custom_enquiry_type IN ('Maintenance', 'Project')
@@ -41,7 +56,10 @@ def execute(filters=None):
                 END
             ) AS firm_offers,
 
-            /* FIRM VALUE IN LACS */
+            /* =================================================
+               FIRM VALUE IN LACS
+               ================================================= */
+
             SUM(
                 CASE
                     WHEN o.custom_enquiry_type IN ('Maintenance', 'Project')
@@ -50,7 +68,11 @@ def execute(filters=None):
                 END
             ) / 100000 AS firm_value_lacs,
 
-            /* BIDDING = Budget */
+            /* =================================================
+               BIDDING
+               Budget
+               ================================================= */
+
             SUM(
                 CASE
                     WHEN o.custom_enquiry_type = 'Budget'
@@ -59,7 +81,10 @@ def execute(filters=None):
                 END
             ) AS bidding_offers,
 
-            /* BIDDING VALUE */
+            /* =================================================
+               BIDDING VALUE
+               ================================================= */
+
             SUM(
                 CASE
                     WHEN o.custom_enquiry_type = 'Budget'
@@ -85,13 +110,17 @@ def execute(filters=None):
     )
 
     # ---------------------------------------------------------
-    # TOTALS
+    # TOTAL VARIABLES
     # ---------------------------------------------------------
 
     total_firm_offers = 0
     total_firm_value_lacs = 0
     total_bidding_offers = 0
     total_bidding_value_rs = 0
+
+    # ---------------------------------------------------------
+    # PROCESS DATA
+    # ---------------------------------------------------------
 
     for row in data:
 
@@ -111,8 +140,10 @@ def execute(filters=None):
             row.get("bidding_value_rs") or 0
         )
 
+        # Add to totals
         total_firm_offers += row["firm_offers"]
         total_firm_value_lacs += row["firm_value_lacs"]
+
         total_bidding_offers += row["bidding_offers"]
         total_bidding_value_rs += row["bidding_value_rs"]
 
@@ -129,22 +160,25 @@ def execute(filters=None):
     })
 
     # ---------------------------------------------------------
-    # COLUMNS
+    # REPORT COLUMNS
     # ---------------------------------------------------------
 
     columns = [
+
         {
             "label": "Region",
             "fieldname": "region",
             "fieldtype": "Data",
             "width": 150
         },
+
         {
             "label": "No of Offers",
             "fieldname": "firm_offers",
             "fieldtype": "Int",
             "width": 110
         },
+
         {
             "label": "Value in Lacs",
             "fieldname": "firm_value_lacs",
@@ -152,12 +186,14 @@ def execute(filters=None):
             "precision": 2,
             "width": 130
         },
+
         {
             "label": "No of Offers",
             "fieldname": "bidding_offers",
             "fieldtype": "Int",
             "width": 110
         },
+
         {
             "label": "Value of Offers in Rs",
             "fieldname": "bidding_value_rs",
