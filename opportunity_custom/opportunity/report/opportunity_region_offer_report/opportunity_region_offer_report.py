@@ -59,7 +59,7 @@ def execute(filters=None):
                     THEN IFNULL(o.custom_offer_value_rs, 0)
                     ELSE 0
                 END
-            ) / 100000 AS firm_value_lacs,
+            ) AS firm_value_lacs,
 
             /* =================================================
                BIDDING
@@ -167,9 +167,9 @@ def execute(filters=None):
         {
             "label": "Value in Lacs",
             "fieldname": "firm_value_lacs",
-            "fieldtype": "Float",
+            "fieldtype": "Currency",
             "precision": 2,
-            "width": 130
+            "width": 150
         },
         {
             "label": "No of Offers",
