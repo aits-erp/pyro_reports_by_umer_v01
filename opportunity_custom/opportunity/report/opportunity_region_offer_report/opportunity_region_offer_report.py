@@ -62,7 +62,7 @@ def execute(filters=None):
 
             SUM(
                 CASE
-                    WHEN o.custom_enquiry_type IN ('Maintenance', 'Project')
+                    WHEN o.custom_enquriry_type IN ('Maintenance', 'Project')
                     THEN IFNULL(o.custom_offer_value_rs, 0)
                     ELSE 0
                 END
@@ -75,7 +75,7 @@ def execute(filters=None):
 
             SUM(
                 CASE
-                    WHEN o.custom_enquiry_type = 'Budget'
+                    WHEN o.custom_enquriry_type = 'Budget'
                     THEN 1
                     ELSE 0
                 END
@@ -87,7 +87,7 @@ def execute(filters=None):
 
             SUM(
                 CASE
-                    WHEN o.custom_enquiry_type = 'Budget'
+                    WHEN o.custom_enquriry_type = 'Budget'
                     THEN IFNULL(o.custom_offer_value_rs, 0)
                     ELSE 0
                 END
