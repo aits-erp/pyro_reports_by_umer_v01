@@ -8,15 +8,8 @@ def execute(filters=None):
     to_date = filters.get("to_date")
     region = filters.get("region")
 
-    # ---------------------------------------------------------
-    # VALIDATION
-    # ---------------------------------------------------------
-
-    if not from_date:
-        frappe.throw("Please select From Date.")
-
-    if not to_date:
-        frappe.throw("Please select To Date.")
+    if not from_date or not to_date:
+        frappe.throw("Please select From Date and To Date.")
 
     # ---------------------------------------------------------
     # CONDITIONS
@@ -35,7 +28,7 @@ def execute(filters=None):
         """
 
     # ---------------------------------------------------------
-    # GET OPPORTUNITY DATA
+    # GET DATA
     # ---------------------------------------------------------
 
     data = frappe.db.sql(
@@ -50,7 +43,7 @@ def execute(filters=None):
 
             SUM(
                 CASE
-                    WHEN o.custom_enquiry_type IN ('Maintenance', 'Project')
+                    WHEN o.enquriry_type IN ('Maintenance', 'Project')
                     THEN 1
                     ELSE 0
                 END
@@ -62,7 +55,7 @@ def execute(filters=None):
 
             SUM(
                 CASE
-                    WHEN o.custom_enquriry_type IN ('Maintenance', 'Project')
+                    WHEN o.enquriry_type IN ('Maintenance', 'Project')
                     THEN IFNULL(o.custom_offer_value_rs, 0)
                     ELSE 0
                 END
@@ -75,7 +68,7 @@ def execute(filters=None):
 
             SUM(
                 CASE
-                    WHEN o.custom_enquriry_type = 'Budget'
+                    WHEN o.enquriry_type = 'Budget'
                     THEN 1
                     ELSE 0
                 END
@@ -87,7 +80,7 @@ def execute(filters=None):
 
             SUM(
                 CASE
-                    WHEN o.custom_enquriry_type = 'Budget'
+                    WHEN o.enquriry_type = 'Budget'
                     THEN IFNULL(o.custom_offer_value_rs, 0)
                     ELSE 0
                 END
@@ -110,17 +103,13 @@ def execute(filters=None):
     )
 
     # ---------------------------------------------------------
-    # TOTAL VARIABLES
+    # TOTALS
     # ---------------------------------------------------------
 
     total_firm_offers = 0
     total_firm_value_lacs = 0
     total_bidding_offers = 0
     total_bidding_value_rs = 0
-
-    # ---------------------------------------------------------
-    # PROCESS DATA
-    # ---------------------------------------------------------
 
     for row in data:
 
@@ -140,7 +129,6 @@ def execute(filters=None):
             row.get("bidding_value_rs") or 0
         )
 
-        # Add to totals
         total_firm_offers += row["firm_offers"]
         total_firm_value_lacs += row["firm_value_lacs"]
 
@@ -160,25 +148,22 @@ def execute(filters=None):
     })
 
     # ---------------------------------------------------------
-    # REPORT COLUMNS
+    # COLUMNS
     # ---------------------------------------------------------
 
     columns = [
-
         {
             "label": "Region",
             "fieldname": "region",
             "fieldtype": "Data",
             "width": 150
         },
-
         {
             "label": "No of Offers",
             "fieldname": "firm_offers",
             "fieldtype": "Int",
             "width": 110
         },
-
         {
             "label": "Value in Lacs",
             "fieldname": "firm_value_lacs",
@@ -186,14 +171,12 @@ def execute(filters=None):
             "precision": 2,
             "width": 130
         },
-
         {
             "label": "No of Offers",
             "fieldname": "bidding_offers",
             "fieldtype": "Int",
             "width": 110
         },
-
         {
             "label": "Value of Offers in Rs",
             "fieldname": "bidding_value_rs",
