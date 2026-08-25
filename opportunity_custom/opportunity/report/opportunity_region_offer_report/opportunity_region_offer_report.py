@@ -165,7 +165,7 @@ def execute(filters=None):
             "width": 110
         },
         {
-            "label": "Value in Lacs",
+            "label": "Value of Offers in Rs",
             "fieldname": "firm_value_lacs",
             "fieldtype": "Currency",
             "precision": 2,
