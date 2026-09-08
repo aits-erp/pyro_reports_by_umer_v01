@@ -33,6 +33,10 @@ def execute(filters=None):
             "width": 160
         },
 
+        # -------------------------------------------------
+        # Follow Up 1
+        # -------------------------------------------------
+
         {
             "label": "Follow Up-1 Date",
             "fieldname": "follow_up_1_date",
@@ -42,9 +46,13 @@ def execute(filters=None):
         {
             "label": "Follow Up-1",
             "fieldname": "follow_up_1",
-            "fieldtype": "Data",
-            "width": 250
+            "fieldtype": "Text",
+            "width": 300
         },
+
+        # -------------------------------------------------
+        # Follow Up 2
+        # -------------------------------------------------
 
         {
             "label": "Follow Up-2 Date",
@@ -55,9 +63,13 @@ def execute(filters=None):
         {
             "label": "Follow Up-2",
             "fieldname": "follow_up_2",
-            "fieldtype": "Data",
-            "width": 250
+            "fieldtype": "Text",
+            "width": 300
         },
+
+        # -------------------------------------------------
+        # Follow Up 3
+        # -------------------------------------------------
 
         {
             "label": "Follow Up-3 Date",
@@ -68,9 +80,13 @@ def execute(filters=None):
         {
             "label": "Follow Up-3",
             "fieldname": "follow_up_3",
-            "fieldtype": "Data",
-            "width": 250
+            "fieldtype": "Text",
+            "width": 300
         },
+
+        # -------------------------------------------------
+        # Follow Up 4
+        # -------------------------------------------------
 
         {
             "label": "Follow Up-4 Date",
@@ -81,31 +97,39 @@ def execute(filters=None):
         {
             "label": "Follow Up-4",
             "fieldname": "follow_up_4",
-            "fieldtype": "Data",
-            "width": 250
+            "fieldtype": "Text",
+            "width": 300
         },
+
+        # -------------------------------------------------
+        # Next Action
+        # -------------------------------------------------
 
         {
             "label": "Next Action To Be Done",
             "fieldname": "next_action_to_be_done",
-            "fieldtype": "Data",
-            "width": 250
+            "fieldtype": "Text",
+            "width": 300
         },
+
+        # -------------------------------------------------
+        # Outcome
+        # -------------------------------------------------
 
         {
             "label": "Outcome",
             "fieldname": "outcome",
-            "fieldtype": "Data",
-            "width": 200
+            "fieldtype": "Text",
+            "width": 250
         }
     ]
 
     conditions = []
     values = {}
 
-    # ---------------------------------------------------------
+    # -----------------------------------------------------
     # Sales Person Filter
-    # ---------------------------------------------------------
+    # -----------------------------------------------------
 
     if filters.get("sales_person"):
         conditions.append(
@@ -116,9 +140,9 @@ def execute(filters=None):
 
         values["sales_person"] = filters.get("sales_person")
 
-    # ---------------------------------------------------------
+    # -----------------------------------------------------
     # Date Range Filter
-    # ---------------------------------------------------------
+    # -----------------------------------------------------
 
     if filters.get("from_date") and filters.get("to_date"):
 
@@ -145,18 +169,18 @@ def execute(filters=None):
         values["from_date"] = filters.get("from_date")
         values["to_date"] = filters.get("to_date")
 
-    # ---------------------------------------------------------
+    # -----------------------------------------------------
     # WHERE Clause
-    # ---------------------------------------------------------
+    # -----------------------------------------------------
 
     where_clause = ""
 
     if conditions:
         where_clause = "WHERE " + " AND ".join(conditions)
 
-    # ---------------------------------------------------------
+    # -----------------------------------------------------
     # Main Query
-    # ---------------------------------------------------------
+    # -----------------------------------------------------
 
     data = frappe.db.sql(
         f"""
@@ -218,7 +242,7 @@ def execute(filters=None):
                 opp.custom_date,
                 opp.custom_date_follow_up2,
                 opp.custom_follow_up_3_date,
-                opp.custom_date_follow_up4
+                opp.custom_follow_up_4_date
             ) ASC,
 
             opp.name ASC
