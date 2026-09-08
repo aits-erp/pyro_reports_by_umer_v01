@@ -24,34 +24,37 @@ frappe.query_reports["Daily Follow Up"] = {
 
     formatter: function(value, row, column, data, default_formatter) {
 
-        value = default_formatter(
+        let formatted_value = default_formatter(
             value,
             row,
             column,
             data
         );
 
-        // Wrap long text columns
-        if (
-            column.fieldname === "follow_up_1" ||
-            column.fieldname === "follow_up_2" ||
-            column.fieldname === "follow_up_3" ||
-            column.fieldname === "follow_up_4" ||
-            column.fieldname === "next_action_to_be_done" ||
-            column.fieldname === "outcome"
-        ) {
+        const wrap_fields = [
+            "follow_up_1",
+            "follow_up_2",
+            "follow_up_3",
+            "follow_up_4",
+            "next_action_to_be_done",
+            "outcome"
+        ];
+
+        if (wrap_fields.includes(column.fieldname)) {
+
             return `
                 <div style="
                     white-space: normal;
-                    word-break: break-word;
                     overflow-wrap: anywhere;
+                    word-break: break-word;
                     line-height: 1.5;
+                    padding: 4px 0;
                 ">
-                    ${value || ""}
+                    ${formatted_value || ""}
                 </div>
             `;
         }
 
-        return value;
+        return formatted_value;
     }
 };

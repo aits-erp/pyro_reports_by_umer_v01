@@ -33,10 +33,7 @@ def execute(filters=None):
             "width": 160
         },
 
-        # -------------------------------------------------
         # Follow Up 1
-        # -------------------------------------------------
-
         {
             "label": "Follow Up-1 Date",
             "fieldname": "follow_up_1_date",
@@ -50,10 +47,7 @@ def execute(filters=None):
             "width": 300
         },
 
-        # -------------------------------------------------
         # Follow Up 2
-        # -------------------------------------------------
-
         {
             "label": "Follow Up-2 Date",
             "fieldname": "follow_up_2_date",
@@ -67,10 +61,7 @@ def execute(filters=None):
             "width": 300
         },
 
-        # -------------------------------------------------
         # Follow Up 3
-        # -------------------------------------------------
-
         {
             "label": "Follow Up-3 Date",
             "fieldname": "follow_up_3_date",
@@ -84,10 +75,7 @@ def execute(filters=None):
             "width": 300
         },
 
-        # -------------------------------------------------
         # Follow Up 4
-        # -------------------------------------------------
-
         {
             "label": "Follow Up-4 Date",
             "fieldname": "follow_up_4_date",
@@ -101,10 +89,7 @@ def execute(filters=None):
             "width": 300
         },
 
-        # -------------------------------------------------
         # Next Action
-        # -------------------------------------------------
-
         {
             "label": "Next Action To Be Done",
             "fieldname": "next_action_to_be_done",
@@ -112,10 +97,7 @@ def execute(filters=None):
             "width": 300
         },
 
-        # -------------------------------------------------
         # Outcome
-        # -------------------------------------------------
-
         {
             "label": "Outcome",
             "fieldname": "outcome",
@@ -145,7 +127,6 @@ def execute(filters=None):
     # -----------------------------------------------------
 
     if filters.get("from_date") and filters.get("to_date"):
-
         conditions.append(
             """
             (
@@ -179,7 +160,7 @@ def execute(filters=None):
         where_clause = "WHERE " + " AND ".join(conditions)
 
     # -----------------------------------------------------
-    # Main Query
+    # Query
     # -----------------------------------------------------
 
     data = frappe.db.sql(
@@ -207,25 +188,26 @@ def execute(filters=None):
                 ELSE NULL
             END AS lead_number,
 
+            # Follow Up 1
             opp.custom_date AS follow_up_1_date,
-
             opp.custom_follow_up1 AS follow_up_1,
 
+            # Follow Up 2
             opp.custom_date_follow_up2 AS follow_up_2_date,
-
             opp.custom_follow_up2 AS follow_up_2,
 
+            # Follow Up 3
             opp.custom_follow_up_3_date AS follow_up_3_date,
-
             opp.custom_follow_up_3 AS follow_up_3,
 
+            # Follow Up 4
             opp.custom_date_follow_up4 AS follow_up_4_date,
-
             opp.custom_follow_up4 AS follow_up_4,
 
-            opp.custom_next_action_to_be_done
-                AS next_action_to_be_done,
+            # Next Action
+            opp.custom_next_action_to_be_done AS next_action_to_be_done,
 
+            # Outcome
             opp.custom_outcome AS outcome
 
         FROM `tabOpportunity` opp
@@ -242,7 +224,7 @@ def execute(filters=None):
                 opp.custom_date,
                 opp.custom_date_follow_up2,
                 opp.custom_follow_up_3_date,
-                opp.custom_follow_up_4_date
+                opp.custom_date_follow_up4
             ) ASC,
 
             opp.name ASC
