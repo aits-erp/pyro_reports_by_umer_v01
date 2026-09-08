@@ -22,6 +22,14 @@ frappe.query_reports["Daily Follow Up"] = {
         }
     ],
 
+    get_datatable_options(options) {
+        delete options.cellHeight;
+
+        return Object.assign(options, {
+            dynamicRowHeight: true
+        });
+    },
+
     formatter: function(value, row, column, data, default_formatter) {
 
         let formatted_value = default_formatter(
@@ -42,19 +50,65 @@ frappe.query_reports["Daily Follow Up"] = {
 
         if (wrap_fields.includes(column.fieldname)) {
 
+            if (!value) {
+                return "";
+            }
+
             return `
-                <div style="
-                    white-space: normal;
-                    overflow-wrap: anywhere;
-                    word-break: break-word;
-                    line-height: 1.5;
-                    padding: 4px 0;
-                ">
-                    ${formatted_value || ""}
+                <div class="daily-follow-up-wrap">
+                    ${formatted_value}
                 </div>
             `;
         }
 
         return formatted_value;
+    },
+
+    onload: function(report) {
+
+        const style_id = "daily-follow-up-wrap-style";
+
+        if (!document.getElementById(style_id)) {
+
+            const style = document.createElement("style");
+
+            style.id = style_id;
+
+            style.innerHTML = `
+                .dt-row {
+                    position: relative !important;
+                    top: auto !important;
+                    height: auto !important;
+                }
+
+                .dt-cell {
+                    height: auto !important;
+                    min-height: 40px;
+                }
+
+                .daily-follow-up-wrap {
+                    white-space: normal !important;
+                    overflow-wrap: anywhere !important;
+                    word-break: break-word !important;
+                    line-height: 1.5 !important;
+                    height: auto !important;
+                    min-height: 30px;
+                    padding-top: 5px;
+                    padding-bottom: 5px;
+                    display: block;
+                }
+
+                .dt-cell__content {
+                    white-space: normal !important;
+                    height: auto !important;
+                }
+
+                .dt-row .dt-cell {
+                    vertical-align: top !important;
+                }
+            `;
+
+            document.head.appendChild(style);
+        }
     }
 };
