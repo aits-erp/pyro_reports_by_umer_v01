@@ -13,24 +13,10 @@ def execute(filters=None):
             "width": 120
         },
         {
-            "label": "Opportunity",
-            "fieldname": "opportunity",
-            "fieldtype": "Link",
-            "options": "Opportunity",
-            "width": 150
-        },
-        {
             "label": "Customer / Lead Name",
             "fieldname": "customer",
             "fieldtype": "Data",
             "width": 200
-        },
-        {
-            "label": "Lead Number",
-            "fieldname": "lead_number",
-            "fieldtype": "Link",
-            "options": "Lead",
-            "width": 160
         },
 
         # Follow Up 1
@@ -103,6 +89,28 @@ def execute(filters=None):
             "fieldname": "outcome",
             "fieldtype": "Text",
             "width": 250
+        },
+
+        # -------------------------------------------------
+        # Opportunity - LAST
+        # -------------------------------------------------
+        {
+            "label": "Opportunity",
+            "fieldname": "opportunity",
+            "fieldtype": "Link",
+            "options": "Opportunity",
+            "width": 150
+        },
+
+        # -------------------------------------------------
+        # Lead Number - LAST
+        # -------------------------------------------------
+        {
+            "label": "Lead Number",
+            "fieldname": "lead_number",
+            "fieldtype": "Link",
+            "options": "Lead",
+            "width": 160
         }
     ]
 
