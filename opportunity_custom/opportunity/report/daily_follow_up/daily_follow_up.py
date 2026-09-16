@@ -91,9 +91,15 @@ def execute(filters=None):
             "width": 250
         },
 
-        # -------------------------------------------------
+        # PO VALUE - LAST
+        {
+            "label": "PO VALUE",
+            "fieldname": "po_value",
+            "fieldtype": "Currency",
+            "width": 130
+        },
+
         # Opportunity - LAST
-        # -------------------------------------------------
         {
             "label": "Opportunity",
             "fieldname": "opportunity",
@@ -102,9 +108,7 @@ def execute(filters=None):
             "width": 150
         },
 
-        # -------------------------------------------------
         # Lead Number - LAST
-        # -------------------------------------------------
         {
             "label": "Lead Number",
             "fieldname": "lead_number",
@@ -216,7 +220,10 @@ def execute(filters=None):
             opp.custom_next_action_to_be_done AS next_action_to_be_done,
 
             # Outcome
-            opp.custom_outcome AS outcome
+            opp.custom_outcome AS outcome,
+
+            # PO VALUE
+            opp.custom_po_value AS po_value
 
         FROM `tabOpportunity` opp
 
