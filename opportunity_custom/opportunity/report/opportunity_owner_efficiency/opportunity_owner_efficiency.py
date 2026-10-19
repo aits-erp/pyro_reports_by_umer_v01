@@ -10,7 +10,7 @@ from erpnext.crm.report.campaign_efficiency.campaign_efficiency import (
 def execute(filters=None):
     filters = filters or {}
 
-    based_on = filters.get("based_on") or "Lead"
+    based_on = filters.get("based_on") or "Opportunity"
 
     if based_on == "Lead":
         return execute_lead_report(filters)
@@ -35,7 +35,57 @@ def execute_lead_report(filters):
             if row.get("lead_owner") == filters["owner"]
         ]
 
-    # Add full name
+    # Get total offer value by Lead Owner
+    conditions = []
+    values = {}
+
+    if filters.get("from_date"):
+        conditions.append(
+            "o.transaction_date >= %(from_date)s"
+        )
+        values["from_date"] = filters["from_date"]
+
+    if filters.get("to_date"):
+        conditions.append(
+            "o.transaction_date <= %(to_date)s"
+        )
+        values["to_date"] = filters["to_date"]
+
+    where_dates = ""
+
+    if conditions:
+        where_dates = " AND " + " AND ".join(conditions)
+
+    offer_rows = frappe.db.sql(
+        f"""
+        SELECT
+            l.lead_owner AS lead_owner,
+            SUM(IFNULL(o.custom_offer_value_rs, 0)) AS order_value
+
+        FROM `tabOpportunity` o
+
+        INNER JOIN `tabLead` l
+            ON o.opportunity_from = 'Lead'
+            AND o.party_name = l.name
+
+        WHERE
+            o.docstatus < 2
+            AND IFNULL(l.lead_owner, '') != ''
+            {where_dates}
+
+        GROUP BY
+            l.lead_owner
+        """,
+        values,
+        as_dict=True,
+    )
+
+    offer_value_map = {
+        row.lead_owner: row.order_value or 0
+        for row in offer_rows
+    }
+
+    # Add owner name and offer value to the report
     for row in data:
         owner = row.get("lead_owner")
 
@@ -48,6 +98,8 @@ def execute_lead_report(filters):
                 )
                 or owner
             )
+
+        row["order_value"] = offer_value_map.get(owner, 0)
 
     return columns, data
 
@@ -93,8 +145,8 @@ def get_lead_columns():
         {
             "fieldname": "order_value",
             "label": _("Order Value"),
-            "fieldtype": "Float",
-            "width": 120,
+            "fieldtype": "Currency",
+            "width": 130,
         },
         {
             "fieldname": "opp_lead",
@@ -210,15 +262,16 @@ def get_opportunity_data(filters):
     if conditions:
         condition_sql = " AND " + " AND ".join(conditions)
 
-    # Get Opportunities
-    # CHANGE: Fetch custom_offer_value_rs from Opportunity
+    # Get Opportunities and their offer values
     opportunities = frappe.db.sql(
         f"""
         SELECT
             o.name,
             o.opportunity_owner,
             o.custom_offer_value_rs
+
         FROM `tabOpportunity` o
+
         WHERE
             o.docstatus < 2
             AND IFNULL(o.opportunity_owner, '') != ''
@@ -247,16 +300,17 @@ def get_opportunity_data(filters):
     result = {}
 
     for opp in opportunities:
-
         owner = opp.opportunity_owner
 
         if owner not in result:
-
-            owner_full_name = frappe.db.get_value(
-                "User",
-                owner,
-                "full_name"
-            ) or owner
+            owner_full_name = (
+                frappe.db.get_value(
+                    "User",
+                    owner,
+                    "full_name"
+                )
+                or owner
+            )
 
             result[owner] = {
                 "opportunity_owner_name": owner_full_name,
@@ -276,23 +330,21 @@ def get_opportunity_data(filters):
                 quotation_map[opp.name]
             )
 
-        # Sales Order Count + Value
+        # Sales Order Count remains unchanged
         if opp.name in sales_order_map:
-
             result[owner]["order_count"] += (
                 sales_order_map[opp.name]["count"]
             )
 
-            # CHANGE: Use Opportunity Offer Value instead
-            # of Sales Order grand_total
-            result[owner]["order_value"] += (
-                frappe.utils.flt(opp.custom_offer_value_rs)
-            )
+        # Order Value: total Opportunity Offer Value
+        # Do not require a submitted Sales Order
+        result[owner]["order_value"] += (
+            frappe.utils.flt(opp.custom_offer_value_rs)
+        )
 
     data = []
 
     for owner, row in result.items():
-
         opp_count = row["opp_count"]
         quot_count = row["quot_count"]
         order_count = row["order_count"]
@@ -313,11 +365,9 @@ def get_opportunity_data(filters):
 
         data.append(row)
 
+    # Sort by Order Value, highest first
     data.sort(
-        key=lambda x: x.get(
-            "order_value",
-            0
-        ),
+        key=lambda x: x.get("order_value", 0),
         reverse=True,
     )
 
@@ -329,7 +379,6 @@ def get_opportunity_data(filters):
 # =========================================================
 
 def get_quotation_data(opportunity_names):
-
     if not opportunity_names:
         return {}
 
@@ -371,15 +420,10 @@ def get_quotation_data(opportunity_names):
 # =========================================================
 
 def get_sales_order_data(opportunity_names):
-
     if not opportunity_names:
         return {}
 
-    # -----------------------------------------------------
-    # STEP 1:
     # Find submitted Quotations created from Opportunities
-    # -----------------------------------------------------
-
     quotation_rows = frappe.db.sql(
         """
         SELECT DISTINCT
@@ -408,24 +452,16 @@ def get_sales_order_data(opportunity_names):
         return {}
 
     quotation_to_opportunity = {}
-
     quotation_names = []
 
     for row in quotation_rows:
-
-        quotation_names.append(
-            row.quotation
-        )
+        quotation_names.append(row.quotation)
 
         quotation_to_opportunity[
             row.quotation
         ] = row.opportunity
 
-    # -----------------------------------------------------
-    # STEP 2:
     # Find submitted Sales Orders created from Quotations
-    # -----------------------------------------------------
-
     sales_orders = frappe.db.sql(
         """
         SELECT
@@ -453,7 +489,6 @@ def get_sales_order_data(opportunity_names):
     result = {}
 
     for row in sales_orders:
-
         quotation = row.quotation
 
         if quotation not in quotation_to_opportunity:
@@ -464,7 +499,6 @@ def get_sales_order_data(opportunity_names):
         ]
 
         if opportunity not in result:
-
             result[opportunity] = {
                 "count": 0,
                 "value": 0,

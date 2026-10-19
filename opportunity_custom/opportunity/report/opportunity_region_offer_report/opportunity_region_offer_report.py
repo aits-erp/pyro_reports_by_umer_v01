@@ -165,7 +165,7 @@ def execute(filters=None):
             "width": 110
         },
         {
-            "label": "Value of Offers in Rs Firm",
+            "label": "Value of Offers in Firm",
             "fieldname": "firm_value_lacs",
             "fieldtype": "Currency",
             "precision": 2,
@@ -178,8 +178,8 @@ def execute(filters=None):
             "width": 110
         },
         {
-            "label": "Value of Offers in Rs Bidding",
-            "fieldname": "bidding_value_rs",
+            "label": "Value of Offers in Bidding",
+            "fieldname": "bidding_value",
             "fieldtype": "Currency",
             "width": 160
         }

@@ -25,7 +25,7 @@ frappe.query_reports["Opportunity Owner Efficiency"] = {
             label: __("Efficiency Based On"),
             fieldtype: "Select",
             options: "Lead\nOpportunity",
-            default: "Lead",
+            default: "Opportunity",
             reqd: 1
         },
         {
