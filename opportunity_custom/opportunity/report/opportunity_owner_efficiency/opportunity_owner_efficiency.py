@@ -1,3 +1,4 @@
+
 import frappe
 from frappe import _
 
@@ -210,11 +211,13 @@ def get_opportunity_data(filters):
         condition_sql = " AND " + " AND ".join(conditions)
 
     # Get Opportunities
+    # CHANGE: Fetch custom_offer_value_rs from Opportunity
     opportunities = frappe.db.sql(
         f"""
         SELECT
             o.name,
-            o.opportunity_owner
+            o.opportunity_owner,
+            o.custom_offer_value_rs
         FROM `tabOpportunity` o
         WHERE
             o.docstatus < 2
@@ -280,8 +283,10 @@ def get_opportunity_data(filters):
                 sales_order_map[opp.name]["count"]
             )
 
+            # CHANGE: Use Opportunity Offer Value instead
+            # of Sales Order grand_total
             result[owner]["order_value"] += (
-                sales_order_map[opp.name]["value"]
+                frappe.utils.flt(opp.custom_offer_value_rs)
             )
 
     data = []
@@ -356,8 +361,7 @@ def get_quotation_data(opportunity_names):
     )
 
     return {
-        row.opportunity:
-            row.quotation_count
+        row.opportunity: row.quotation_count
         for row in rows
     }
 
