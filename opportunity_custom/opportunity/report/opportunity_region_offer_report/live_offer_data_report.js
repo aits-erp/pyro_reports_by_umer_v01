@@ -1,4 +1,4 @@
-frappe.query_reports["Opportunity Region Offer Report"] = {
+frappe.query_reports["Live Offer Data Report"] = {
     filters: [
         {
             fieldname: "from_date",
