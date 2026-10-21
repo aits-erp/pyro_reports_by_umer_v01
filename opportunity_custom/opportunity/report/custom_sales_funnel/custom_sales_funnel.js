@@ -1,16 +1,16 @@
 
-frappe.query_reports["Sales Funnel Report"] = {
+frappe.query_reports["Custom Sales Funnel"] = {
     filters: [
         {
             fieldname: "from_date",
-            label: "From Date",
+            label: __("From Date"),
             fieldtype: "Date",
             reqd: 1,
             default: frappe.datetime.month_start()
         },
         {
             fieldname: "to_date",
-            label: "To Date",
+            label: __("To Date"),
             fieldtype: "Date",
             reqd: 1,
             default: frappe.datetime.get_today()
@@ -18,15 +18,23 @@ frappe.query_reports["Sales Funnel Report"] = {
     ],
 
     onload: function(report) {
-        report.page.add_inner_button("Refresh Funnel", function() {
+        report.page.add_inner_button(__("Refresh Funnel"), function() {
             report.refresh();
         });
+    },
+
+    refresh: function(report) {
+        // Schedule rendering after the report data has refreshed.
+        setTimeout(function() {
+            render_sales_funnel(report);
+        }, 300);
     },
 
     after_datatable_render: function(report) {
         render_sales_funnel(report);
     }
 };
+
 
 function render_sales_funnel(report) {
     const wrapper = report.page.wrapper;
@@ -36,49 +44,73 @@ function render_sales_funnel(report) {
     if (!container.length) {
         container = $(`
             <div id="custom-sales-funnel"
-                 style="margin:20px 0;padding:15px;
-                        background:var(--card-bg);
-                        border-radius:8px;">
+                 style="
+                    margin: 20px 0;
+                    padding: 15px;
+                    background: var(--card-bg);
+                    border-radius: 8px;
+                    overflow-x: auto;
+                 ">
             </div>
         `);
 
-        wrapper.find(".datatable").first().before(container);
+        const datatable = wrapper.find(".datatable").first();
+
+        if (datatable.length) {
+            datatable.before(container);
+        } else {
+            wrapper.find(".report-wrapper").first().prepend(container);
+        }
     }
 
-    const rows = report.data || [];
+    const rows = (report.data || []).filter(function(row) {
+        return row.stage && row.stage !== "Total";
+    });
 
     if (!rows.length) {
-        container.empty();
+        container.html(
+            `<div style="padding:20px;text-align:center;color:var(--text-muted)">
+                ${__("No funnel data available. Please select dates and refresh.")}
+            </div>`
+        );
         return;
     }
 
     const colors = [
-        "#b33b4a",
-        "#f59e00",
-        "#087e9b",
-        "#00a878",
-        "#747b86"
+        "#b33b4a", // Active Leads
+        "#f59e00", // Opportunities
+        "#087e9b", // Quotation
+        "#00a878", // Converted
+        "#747b86"  // Lost
     ];
 
-    const width = 900;
-    const center = width / 2;
-    const topWidth = 840;
-    const stageHeight = 100;
-
-    const maxCount = Math.max(
-        1,
-        ...rows.map(row => Number(row.count || 0))
-    );
+    const width = 1100;
+    const chartHeight = 480;
+    const center = 400;
+    const topWidth = 700;
+    const stageHeight = chartHeight / rows.length;
+    const taper = 0.78;
 
     let svg = `
-        <svg viewBox="0 0 ${width} ${rows.length * stageHeight + 20}"
-             style="width:100%;max-width:1100px;display:block;margin:auto;">
+        <svg
+            viewBox="0 0 ${width} ${chartHeight + 20}"
+            role="img"
+            aria-label="${__("Sales Funnel")}"
+            style="width:100%;min-width:700px;display:block;"
+        >
     `;
 
-    rows.forEach((row, index) => {
+    rows.forEach(function(row, index) {
         const y = index * stageHeight + 10;
-        const top = topWidth * (1 - index / rows.length * 0.72);
-        const bottom = topWidth * (1 - (index + 1) / rows.length * 0.72);
+
+        // Each stage tapers toward the bottom.
+        const top = topWidth * (
+            1 - (index / rows.length) * taper
+        );
+
+        const bottom = topWidth * (
+            1 - ((index + 1) / rows.length) * taper
+        );
 
         const topLeft = center - top / 2;
         const topRight = center + top / 2;
@@ -94,35 +126,48 @@ function render_sales_funnel(report) {
 
         const count = Number(row.count || 0);
         const offerValue = Number(row.offer_value || 0);
+        const color = colors[index % colors.length];
+        const labelY = y + stageHeight / 2;
 
         svg += `
-            <polygon points="${points}"
-                     fill="${colors[index % colors.length]}"
-                     stroke="white"
-                     stroke-width="1">
-                <title>${frappe.utils.escape_html(row.stage)}: ${count}</title>
+            <polygon
+                points="${points}"
+                fill="${color}"
+                stroke="white"
+                stroke-width="1"
+            >
+                <title>${escape_funnel_text(row.stage)}: ${count}</title>
             </polygon>
 
-            <line x1="${center + bottom / 2}"
-                  y1="${y + stageHeight / 2}"
-                  x2="${center + bottom / 2 + 30}"
-                  y2="${y + stageHeight / 2}"
-                  stroke="${colors[index % colors.length]}"
-                  stroke-width="2"/>
+            <line
+                x1="${center + bottom / 2}"
+                y1="${labelY}"
+                x2="${center + bottom / 2 + 35}"
+                y2="${labelY}"
+                stroke="${color}"
+                stroke-width="2"
+            />
 
-            <text x="${center + bottom / 2 + 40}"
-                  y="${y + stageHeight / 2 - 5}"
-                  font-size="15"
-                  fill="var(--text-color)">
-                ${frappe.utils.escape_html(row.stage)}: ${count}
-            </text>
+            <circle
+                cx="${center + bottom / 2 + 35}"
+                cy="${labelY}"
+                r="5"
+                fill="${color}"
+            />
 
-            <text x="${center + bottom / 2 + 40}"
-                  y="${y + stageHeight / 2 + 16}"
-                  font-size="12"
-                  fill="var(--text-muted)">
-                Offer Value: ${format_currency(offerValue)}
-            </text>
+            <text
+                x="${center + bottom / 2 + 55}"
+                y="${labelY - 5}"
+                font-size="15"
+                fill="var(--text-color)"
+            >${escape_funnel_text(row.stage)}: ${count}</text>
+
+            <text
+                x="${center + bottom / 2 + 55}"
+                y="${labelY + 16}"
+                font-size="12"
+                fill="var(--text-muted)"
+            >Offer Value: ${format_currency(offerValue)}</text>
         `;
     });
 
@@ -131,8 +176,20 @@ function render_sales_funnel(report) {
     container.html(svg);
 }
 
+
+function escape_funnel_text(value) {
+    return String(value == null ? "" : value)
+        .replace(/&/g, "&amp;")
+        .replace(/</g, "&lt;")
+        .replace(/>/g, "&gt;")
+        .replace(/"/g, "&quot;")
+        .replace(/'/g, "&#039;");
+}
+
+
 function format_currency(value) {
     return new Intl.NumberFormat("en-IN", {
+        minimumFractionDigits: 0,
         maximumFractionDigits: 2
-    }).format(value);
+    }).format(Number(value || 0));
 }
