@@ -23,57 +23,70 @@ frappe.query_reports["Custom Sales Funnel"] = {
         });
     },
 
-    refresh: function(report) {
-        setTimeout(function() {
-            render_sales_funnel(report);
-        }, 700);
-    },
-
-    after_datatable_render: function(report) {
-        render_sales_funnel(report);
+    // IMPORTANT: This argument is the DataTable, not the report.
+    after_datatable_render: function(datatable_obj) {
+        render_sales_funnel();
     }
 };
 
 
-function render_sales_funnel(report) {
-    const wrapper = report.page.wrapper;
+function render_sales_funnel() {
 
-    // Create a dedicated container for the chart.
-    let container = wrapper.find("#custom-sales-funnel");
+    const report = frappe.query_report;
+
+    if (!report) {
+        console.error("Sales Funnel: Query Report instance not found");
+        return;
+    }
+
+    // Get actual report data from Frappe.
+    const rows = (report.data || []).filter(row =>
+        row.stage &&
+        [
+            "Active Leads",
+            "Opportunities",
+            "Quotation",
+            "Converted",
+            "Lost"
+        ].includes(row.stage)
+    );
+
+    console.log("Sales Funnel Data:", rows);
+
+    // Find the original Frappe report table.
+    const reportTable = report.$report;
+
+    if (!reportTable || !reportTable.length) {
+        console.error("Sales Funnel: Report table container not found");
+        return;
+    }
+
+    // Create chart container once.
+    let container = report.page.wrapper.find("#custom-sales-funnel");
 
     if (!container.length) {
         container = $(`
             <div id="custom-sales-funnel"
-                 style="width:100%; padding:15px 0; overflow-x:auto;">
+                 style="
+                    width:100%;
+                    padding:20px 10px;
+                    background:var(--card-bg);
+                    overflow-x:auto;
+                 ">
             </div>
         `);
 
-        const reportArea = wrapper.find(".report-wrapper").first();
-
-        if (reportArea.length) {
-            reportArea.prepend(container);
-        } else {
-            wrapper.find(".layout-main-section").first().prepend(container);
-        }
+        reportTable.before(container);
     }
-
-    const rows = (report.data || []).filter(function(row) {
-        return row.stage &&
-            ["Active Leads", "Opportunities", "Quotation", "Converted", "Lost"]
-                .includes(row.stage);
-    });
 
     if (!rows.length) {
         container.html(`
             <div style="padding:30px;text-align:center;">
-                ${__("No funnel data found for the selected dates.")}
+                No funnel data available.
             </div>
         `);
         return;
     }
-
-    // Hide the normal data table to match the standard funnel layout.
-    wrapper.find(".report-wrapper .datatable").hide();
 
     const colors = [
         "#b33b4a",
@@ -84,10 +97,10 @@ function render_sales_funnel(report) {
     ];
 
     const width = 1200;
-    const heightPerStage = 125;
-    const chartHeight = rows.length * heightPerStage + 20;
     const center = 420;
     const maxWidth = 820;
+    const stageHeight = 125;
+    const chartHeight = rows.length * stageHeight + 20;
     const taper = 0.82;
 
     let svg = `
@@ -97,8 +110,9 @@ function render_sales_funnel(report) {
              aria-label="Sales Funnel">
     `;
 
-    rows.forEach(function(row, index) {
-        const y = index * heightPerStage + 10;
+    rows.forEach((row, index) => {
+
+        const y = index * stageHeight + 10;
 
         const topWidth = maxWidth *
             (1 - (index / rows.length) * taper);
@@ -111,17 +125,20 @@ function render_sales_funnel(report) {
         const bottomLeft = center - bottomWidth / 2;
         const bottomRight = center + bottomWidth / 2;
 
-        const labelY = y + heightPerStage / 2;
+        const labelY = y + stageHeight / 2;
         const color = colors[index % colors.length];
+
         const count = Number(row.count || 0);
         const value = Number(row.offer_value || 0);
 
         const points = [
             `${topLeft},${y}`,
             `${topRight},${y}`,
-            `${bottomRight},${y + heightPerStage}`,
-            `${bottomLeft},${y + heightPerStage}`
+            `${bottomRight},${y + stageHeight}`,
+            `${bottomLeft},${y + stageHeight}`
         ].join(" ");
+
+        const labelX = center + bottomWidth / 2 + 55;
 
         svg += `
             <polygon
@@ -135,27 +152,27 @@ function render_sales_funnel(report) {
             <line
                 x1="${center + bottomWidth / 2}"
                 y1="${labelY}"
-                x2="${center + bottomWidth / 2 + 40}"
+                x2="${labelX - 15}"
                 y2="${labelY}"
                 stroke="${color}"
-                stroke-width="1.5" />
+                stroke-width="1.5"/>
 
             <circle
-                cx="${center + bottomWidth / 2 + 40}"
+                cx="${labelX - 15}"
                 cy="${labelY}"
                 r="5"
-                fill="${color}" />
+                fill="${color}"/>
 
             <text
-                x="${center + bottomWidth / 2 + 60}"
-                y="${labelY - 4}"
+                x="${labelX}"
+                y="${labelY - 5}"
                 font-size="15"
                 fill="var(--text-color)">
                 ${escape_funnel_text(row.stage)}: ${count}
             </text>
 
             <text
-                x="${center + bottomWidth / 2 + 60}"
+                x="${labelX}"
                 y="${labelY + 17}"
                 font-size="12"
                 fill="var(--text-muted)">
@@ -166,7 +183,9 @@ function render_sales_funnel(report) {
 
     svg += `</svg>`;
 
+    // Display funnel and hide the original table.
     container.html(svg);
+    reportTable.hide();
 }
 
 
